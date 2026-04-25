@@ -1,0 +1,36 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Playfair Display', ui-serif, Georgia, 'Times New Roman', serif;
+  --color-rose-50: #fff5f7;
+  --color-rose-100: #ffe4ec;
+  --color-rose-200: #fecdd3;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-blush-500: #e8a0b0;
+  --color-sand-50: #fdf8f3;
+  --color-sand-100: #f5ebe0;
+  --color-sand-200: #ead5c4;
+  --color-mauve-700: #5c4a5a;
+  --color-mauve-800: #3f3340;
+}
+
+@layer base {
+  html {
+    @apply scroll-smooth antialiased;
+  }
+  body {
+    @apply min-h-svh bg-gradient-to-b from-rose-50 via-sand-50 to-white text-mauve-800 font-sans;
+    background-image:
+      radial-gradient(1200px 600px at 10% -10%, rgba(244, 63, 94, 0.08), transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, rgba(232, 160, 176, 0.12), transparent 50%);
+  }
+  #root {
+    @apply min-h-svh;
+  }
+  ::selection {
+    @apply bg-rose-200 text-mauve-800;
+  }
+}
