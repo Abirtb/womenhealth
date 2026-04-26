@@ -167,13 +167,15 @@ export function BlockchainVerificationModal({ isOpen, onClose, data, productName
 
                           {/* Actor and location */}
                           <div className="space-y-2 text-sm">
-                            <p>
-                              <span className="font-semibold text-gray-900">Actor:</span>{' '}
-                              <span className="text-gray-700">
-                                {event.actor_role}
-                                {event.actor_id ? ` (${event.actor_id})` : ''}
-                              </span>
-                            </p>
+                            {event.actor_role && (
+                              <p>
+                                <span className="font-semibold text-gray-900">Actor:</span>{' '}
+                                <span className="text-gray-700">
+                                  {event.actor_role}
+                                  {event.actor_id ? ` (${event.actor_id})` : ''}
+                                </span>
+                              </p>
+                            )}
                             {(event.location_name || event.location?.name) && (
                               <p>
                                 <span className="font-semibold text-gray-900">Location:</span>{' '}
