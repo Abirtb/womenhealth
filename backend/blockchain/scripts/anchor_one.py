@@ -5,7 +5,7 @@ One-off: anchor a bytes32 on Sepolia (run from backend folder).
   set SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
   set SEPOLIA_PRIVATE_KEY=0x...
   set PROVENANCE_CONTRACT=0x...
-  py -3.12 blockchain/scripts/anchor_one.py 0x0123456789abcdef...64hex
+  python blockchain/scripts/anchor_one.py 0x0123456789abcdef...64hex
 
 Requires: pip install web3
 """

@@ -2,9 +2,9 @@
 Load backend/.env, verify RPC + contract, optionally send one anchor tx.
 
   cd backend
-  py -3.12 -m pip install web3 python-dotenv
-  py -3.12 blockchain/scripts/test_sepolia.py          # read-only checks
-  py -3.12 blockchain/scripts/test_sepolia.py anchor # send anchor (uses gas)
+  python -m pip install -r requirements.txt
+  python blockchain/scripts/test_sepolia.py          # read-only checks
+  python blockchain/scripts/test_sepolia.py anchor # send anchor (uses gas)
 """
 from __future__ import annotations
 

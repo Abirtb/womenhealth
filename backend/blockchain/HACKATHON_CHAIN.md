@@ -47,10 +47,19 @@ $env:PROVENANCE_CONTRACT = "0x...."   # from Remix
 
 ## 5. Install Python `web3` and run one anchor
 
+From the `backend` folder. If the Windows `py` launcher is missing, use **`python`** on your PATH, or run **`nurtura-python.cmd`** in this folder (it tries `Python312` / `Python311` under `%LOCALAPPDATA%\Programs\Python\`).
+
 ```powershell
 cd path\to\Nurtura\backend
-py -3.12 -m pip install web3
-py -3.12 blockchain\scripts\anchor_one.py 0x1111111111111111111111111111111111111111111111111111111111111111
+python -m pip install -r requirements.txt
+python blockchain\scripts\anchor_one.py 0x1111111111111111111111111111111111111111111111111111111111111111
+```
+
+Alternative when `python` is not on PATH:
+
+```powershell
+.\nurtura-python.cmd -m pip install -r requirements.txt
+.\nurtura-python.cmd blockchain\scripts\anchor_one.py 0x1111111111111111111111111111111111111111111111111111111111111111
 ```
 
 (Replace with a real `bytes32` — 64 hex chars after `0x` — e.g. hash your JSON in Django `hashlib` and left-pad to 32 bytes if needed.)
