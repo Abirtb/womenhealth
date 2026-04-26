@@ -92,15 +92,15 @@ Rules:
 - Keep explanation simple but evidence-based
 
 Return ONLY valid JSON:
-{
+{{
   "recipes": [
-    {
+    {{
       "name": "",
       "ingredients": [],
       "steps": [],
       "benefits": [],
       "explanation": ""
-    }
+    }}
   ]
-}
+}}
 """

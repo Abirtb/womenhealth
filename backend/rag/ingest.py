@@ -7,8 +7,12 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
-PDF_DIR = "PDFs"
-INDEX_PATH = "faiss_index"
+from pathlib import Path
+
+_RAG_ROOT = Path(__file__).resolve().parent
+PDF_DIR = str(_RAG_ROOT / "PDFs" / "RAG")
+INDEX_PATH = str(_RAG_ROOT / "faiss_index")
+
 
 def ingest():
     if not os.path.exists(PDF_DIR):

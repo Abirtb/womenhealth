@@ -27,7 +27,9 @@ class GenerateDietView(APIView):
 
     def post(self, request):
         week_number = int(request.data.get("week_number", 1))
-        foods = list(FoodItem.objects.values("name", "category", "organic", "safety_score"))
+        foods = list(
+            FoodItem.objects.values("id", "name", "category", "organic", "safety_score", "farm_origin")
+        )
         user = request.user
         plan_json = generate_meal_plan(
             pregnancy_stage=user.pregnancy_stage,

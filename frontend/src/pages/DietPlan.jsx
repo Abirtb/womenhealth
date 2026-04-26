@@ -55,7 +55,7 @@ export function DietPlan() {
             <SectionTitle
               eyebrow="Weekly rhythm"
               title="Your diet plan"
-              subtitle="Mock AI output today — swap the engine for RAG + LLM when you are ready. The layout stays the same for your users."
+              subtitle="Weekly meals use your food catalog; RAG-backed recipes (when Ollama + indexes are up) appear below with ingredients matched to your list."
             />
           </div>
           <div className="relative min-h-[200px]">
@@ -122,10 +122,11 @@ export function DietPlan() {
         <div className="flex items-center gap-3">
           <Sparkles className="h-6 w-6 text-rose-500" />
           <div>
-            <p className="text-sm font-semibold text-mauve-800">AI placeholder</p>
+            <p className="text-sm font-semibold text-mauve-800">RAG + catalog</p>
             <p className="text-sm text-mauve-700">
-              Structured JSON from `services/ai_diet_engine.py` — vector search and LLM prompts can land behind this same
-              contract.
+              Evidence-grounded recipe ideas from `backend/rag` (FAISS + PDFs) when{' '}
+              <span className="font-mono text-xs">NURTURA_USE_RAG</span> is on and Ollama is reachable. Ingredients are
+              matched to your <span className="font-semibold">FoodItem</span> list when names align.
             </p>
           </div>
         </div>
@@ -169,6 +170,59 @@ export function DietPlan() {
               <span className="font-semibold text-mauve-800">Recommendations: </span>
               {latest.recommendations}
             </p>
+          )}
+
+          {latest.meals?.rag_error && (
+            <p className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
+              <span className="font-semibold">RAG unavailable: </span>
+              {latest.meals.rag_error}
+              <span className="mt-1 block text-xs text-amber-800">
+                Start Ollama with your model, or set <code className="rounded bg-white/80 px-1">NURTURA_USE_RAG=false</code>{' '}
+                to skip retrieval recipes.
+              </span>
+            </p>
+          )}
+
+          {Array.isArray(latest.meals?.rag_recipes) && latest.meals.rag_recipes.length > 0 && (
+            <div className="space-y-4 border-t border-rose-100 pt-6">
+              <p className="font-display text-lg font-semibold text-mauve-800">RAG recipe ideas</p>
+              <ul className="space-y-5">
+                {latest.meals.rag_recipes.map((recipe, idx) => (
+                  <li
+                    key={`${recipe.name || 'recipe'}-${idx}`}
+                    className="rounded-2xl border border-rose-100 bg-white/90 p-4 shadow-sm"
+                  >
+                    <p className="font-semibold text-rose-700">{recipe.name || 'Recipe'}</p>
+                    {recipe.explanation && (
+                      <p className="mt-2 text-sm text-mauve-700">{recipe.explanation}</p>
+                    )}
+                    {Array.isArray(recipe.ingredients_linked) && recipe.ingredients_linked.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-mauve-600">Ingredients</p>
+                        <ul className="mt-2 flex flex-wrap gap-2">
+                          {recipe.ingredients_linked.map((row, j) => (
+                            <li
+                              key={j}
+                              className={`rounded-full px-3 py-1 text-xs ${
+                                row.matched_food
+                                  ? 'border border-emerald-200 bg-emerald-50 text-emerald-900'
+                                  : 'border border-rose-100 bg-rose-50/60 text-mauve-700'
+                              }`}
+                              title={row.matched_food ? `Catalog id: ${row.matched_food.id}` : 'Not in catalog'}
+                            >
+                              {row.text}
+                              {row.matched_food && (
+                                <span className="ml-1 font-semibold">→ {row.matched_food.name}</span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       )}

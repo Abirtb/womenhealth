@@ -1,6 +1,6 @@
 # test_recipe.py
 
-from rag_chain import recommend_recipes
+from rag.rag_chain import recommend_recipes
 
 user_profile = {
     "is_pregnant": True,
