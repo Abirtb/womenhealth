@@ -1,10 +1,12 @@
 import { ExternalLink, List, MapPin, MapPinned, Navigation, Store } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { fetchNearbyFood, updateProfile } from '../services/api'
+import { fetchNearbyFood, updateProfile, verifyProductBlockchain } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { MediaImage } from '../components/MediaImage'
 import { SectionTitle } from '../components/SectionTitle'
+import { BlockchainVerificationBadge } from '../components/BlockchainVerificationBadge'
+import { BlockchainVerificationModal } from '../components/BlockchainVerificationModal'
 import { foodImageForCategory, imagery } from '../content/imagery'
 import { useShoppingLocation } from '../hooks/useShoppingLocation'
 
@@ -48,6 +50,12 @@ export function NearbyFood() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [savingLoc, setSavingLoc] = useState(false)
+  
+  // Blockchain verification state
+  const [blockchainData, setBlockchainData] = useState({})
+  const [blockchainLoading, setBlockchainLoading] = useState({})
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [showBlockchainModal, setShowBlockchainModal] = useState(false)
 
   const params = useMemo(
     () => ({
@@ -100,6 +108,33 @@ export function NearbyFood() {
     } finally {
       setSavingLoc(false)
     }
+  }
+
+  const fetchBlockchainVerification = async (productId, itemName) => {
+    if (blockchainData[productId]) {
+      setSelectedProduct({ productId, itemName, data: blockchainData[productId] })
+      setShowBlockchainModal(true)
+      return
+    }
+
+    setBlockchainLoading((prev) => ({ ...prev, [productId]: true }))
+    try {
+      const data = await verifyProductBlockchain(productId)
+      setBlockchainData((prev) => ({ ...prev, [productId]: data }))
+      setSelectedProduct({ productId, itemName, data })
+      setShowBlockchainModal(true)
+    } catch (err) {
+      console.error('Failed to fetch blockchain verification:', err)
+      setError('Could not load blockchain verification data.')
+    } finally {
+      setBlockchainLoading((prev) => ({ ...prev, [productId]: false }))
+    }
+  }
+
+  const generateProductId = (name, category) => {
+    const namePrefix = name.replace(/\s+/g, '-').toUpperCase().slice(0, 6)
+    const categoryPrefix = category.toUpperCase().slice(0, 4)
+    return `PROD-${categoryPrefix}-${namePrefix}`
   }
 
   return (
@@ -315,7 +350,12 @@ export function NearbyFood() {
       {mode === 'list' && (
         <div className="grid gap-5 md:grid-cols-2">
           {items.length === 0 && !loading && <p className="text-sm text-mauve-600 col-span-full">No matches — widen the radius or lower the safety filter.</p>}
-          {items.map((row) => (
+          {items.map((row) => {
+            const productId = generateProductId(row.food_item.name, row.food_item.category)
+            const isVerified = !!blockchainData[productId]
+            const isLoading = blockchainLoading[productId]
+
+            return (
             <div
               key={row.id}
               className="overflow-hidden rounded-3xl border border-rose-100/90 bg-white/95 shadow-md shadow-rose-100/40 transition hover:-translate-y-0.5 hover:shadow-lg"
@@ -333,6 +373,11 @@ export function NearbyFood() {
                 <div className="absolute right-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-rose-600 shadow-md backdrop-blur-sm">
                   Safety {row.food_item.safety_score}
                 </div>
+                <BlockchainVerificationBadge
+                  isVerified={isVerified}
+                  isLoading={isLoading}
+                  onClick={() => fetchBlockchainVerification(productId, row.food_item.name)}
+                />
               </div>
               <div className="space-y-2 p-5">
                 <p className="font-display text-xl text-mauve-800">{row.food_item.name}</p>
@@ -344,7 +389,8 @@ export function NearbyFood() {
                 </p>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -388,6 +434,16 @@ export function NearbyFood() {
           </p>
         </div>
       )}
+
+      <BlockchainVerificationModal
+        isOpen={showBlockchainModal}
+        onClose={() => {
+          setShowBlockchainModal(false)
+          setSelectedProduct(null)
+        }}
+        data={selectedProduct?.data}
+        productName={selectedProduct?.itemName}
+      />
     </div>
   )
 }
