@@ -131,10 +131,10 @@ export function NearbyFood() {
     }
   }
 
-  const generateProductId = (name, category) => {
-    const namePrefix = name.replace(/\s+/g, '-').toUpperCase().slice(0, 6)
-    const categoryPrefix = category.toUpperCase().slice(0, 4)
-    return `PROD-${categoryPrefix}-${namePrefix}`
+  const getBlockchainProductId = (name) => {
+    // Convert product name to lowercase for blockchain matching
+    // e.g., "Spinach" -> "spinach", "Wild salmon" -> "wild salmon"
+    return name.toLowerCase()
   }
 
   return (
@@ -351,7 +351,7 @@ export function NearbyFood() {
         <div className="grid gap-5 md:grid-cols-2">
           {items.length === 0 && !loading && <p className="text-sm text-mauve-600 col-span-full">No matches — widen the radius or lower the safety filter.</p>}
           {items.map((row) => {
-            const productId = generateProductId(row.food_item.name, row.food_item.category)
+            const productId = getBlockchainProductId(row.food_item.name)
             const isVerified = !!blockchainData[productId]
             const isLoading = blockchainLoading[productId]
 
