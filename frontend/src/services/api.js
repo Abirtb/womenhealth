@@ -88,3 +88,9 @@ export async function fetchArticles(params) {
   const { data } = await api.get('/articles/', { params })
   return data
 }
+
+export async function verifyProductBlockchain(productId) {
+  const { data } = await api.get(`/blockchain/verify/${productId}/`)
+  return data
+}
+

@@ -1,12 +1,267 @@
 import { ExternalLink, List, MapPin, MapPinned, Navigation, Store } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { fetchNearbyFood, updateProfile } from '../services/api'
+import { fetchNearbyFood, updateProfile, verifyProductBlockchain } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { MediaImage } from '../components/MediaImage'
 import { SectionTitle } from '../components/SectionTitle'
+import { BlockchainVerificationBadge } from '../components/BlockchainVerificationBadge'
+import { BlockchainVerificationModal } from '../components/BlockchainVerificationModal'
 import { foodImageForCategory, imagery } from '../content/imagery'
 import { useShoppingLocation } from '../hooks/useShoppingLocation'
+
+// Mock blockchain data for prototype - verified products
+const MOCK_BLOCKCHAIN_DATA = {
+  spinach: {
+    product_id: 'spinach',
+    verified: true,
+    total_events: 3,
+    certifications: ['organic', 'iso'],
+    locations: [
+      { city: 'Salinas', state: 'CA', country: 'USA', name: 'Green Valley Farm' },
+      { city: 'Salinas', state: 'CA', country: 'USA', name: 'Green Valley Processing' }
+    ],
+    events: [
+      {
+        event_type: 'packaging',
+        actor_role: 'processor',
+        timestamp: '2024-06-15T12:00:00-07:00',
+        event_notes: 'Packaged in food-grade containers, labeled with traceability code.',
+        location_name: 'Green Valley Processing',
+        location_city: 'Salinas',
+        location_state: 'CA',
+        certification_type: 'iso'
+      },
+      {
+        event_type: 'processing',
+        actor_role: 'processor',
+        timestamp: '2024-06-15T09:00:00-07:00',
+        event_notes: 'Triple-washed with organic-certified water, ISO 22000 standards maintained.',
+        location_name: 'Green Valley Processing',
+        location_city: 'Salinas',
+        location_state: 'CA',
+        certification_type: 'iso'
+      },
+      {
+        event_type: 'harvest',
+        actor_role: 'farmer',
+        timestamp: '2024-06-15T06:30:00-07:00',
+        event_notes: 'Fresh organic spinach harvested at dawn, peak freshness achieved.',
+        location_name: 'Green Valley Farm',
+        location_city: 'Salinas',
+        location_state: 'CA',
+        certification_type: 'organic'
+      }
+    ]
+  },
+  blueberries: {
+    product_id: 'blueberries',
+    verified: true,
+    total_events: 3,
+    certifications: ['organic'],
+    locations: [
+      { city: 'Watsonville', state: 'CA', country: 'USA', name: 'Berry Hill Orchards' },
+      { city: 'Watsonville', state: 'CA', country: 'USA', name: 'Berry Hill Processing' }
+    ],
+    events: [
+      {
+        event_type: 'packaging',
+        actor_role: 'processor',
+        timestamp: '2024-06-12T11:00:00-07:00',
+        event_notes: 'Packaged in 200g organic containers, refrigerated for shipment.',
+        location_name: 'Berry Hill Processing',
+        location_city: 'Watsonville',
+        location_state: 'CA',
+        certification_type: 'organic'
+      },
+      {
+        event_type: 'inspection',
+        actor_role: 'inspector',
+        timestamp: '2024-06-12T08:00:00-07:00',
+        event_notes: 'Quality inspection passed, no pesticides detected, organic certification verified.',
+        location_name: 'Berry Hill Inspection Lab',
+        location_city: 'Watsonville',
+        location_state: 'CA',
+        certification_type: 'organic'
+      },
+      {
+        event_type: 'harvest',
+        actor_role: 'farmer',
+        timestamp: '2024-06-12T05:00:00-07:00',
+        event_notes: 'Peak season blueberries, hand-picked organic berries with perfect ripeness.',
+        location_name: 'Berry Hill Orchards',
+        location_city: 'Watsonville',
+        location_state: 'CA',
+        certification_type: 'organic'
+      }
+    ]
+  },
+  carrots: {
+    product_id: 'carrots',
+    verified: true,
+    total_events: 2,
+    certifications: ['organic', 'iso'],
+    locations: [
+      { city: 'Yolo County', state: 'CA', country: 'USA', name: 'Root Farm Organic' }
+    ],
+    events: [
+      {
+        event_type: 'processing',
+        actor_role: 'processor',
+        timestamp: '2024-06-10T10:00:00-07:00',
+        event_notes: 'Cleaned and sorted by size, organic water used, ISO 22000 compliant.',
+        location_name: 'Root Farm Processing',
+        location_city: 'Yolo County',
+        location_state: 'CA',
+        certification_type: 'iso'
+      },
+      {
+        event_type: 'harvest',
+        actor_role: 'farmer',
+        timestamp: '2024-06-10T07:00:00-07:00',
+        event_notes: 'Orange carrots harvested from certified organic soil, no pesticides used.',
+        location_name: 'Root Farm Organic',
+        location_city: 'Yolo County',
+        location_state: 'CA',
+        certification_type: 'organic'
+      }
+    ]
+  },
+  'wild salmon': {
+    product_id: 'wild salmon',
+    verified: true,
+    total_events: 2,
+    certifications: ['organic', 'gap'],
+    locations: [
+      { city: 'Klamath Falls', state: 'OR', country: 'USA', name: 'North River Co-op' }
+    ],
+    events: [
+      {
+        event_type: 'processing',
+        actor_role: 'processor',
+        timestamp: '2024-06-18T08:00:00-08:00',
+        event_notes: 'Processed and flash-frozen within 4 hours of catch, peak freshness preserved.',
+        location_name: 'North River Processing',
+        location_city: 'Klamath Falls',
+        location_state: 'OR',
+        certification_type: 'gap'
+      },
+      {
+        event_type: 'harvest',
+        actor_role: 'farmer',
+        timestamp: '2024-06-18T04:00:00-08:00',
+        event_notes: 'Wild-caught salmon from certified sustainable fishery, peak season catch.',
+        location_name: 'North River Co-op',
+        location_city: 'Klamath Falls',
+        location_state: 'OR',
+        certification_type: 'organic'
+      }
+    ]
+  },
+  avocado: {
+    product_id: 'avocado',
+    verified: true,
+    total_events: 2,
+    certifications: ['gap'],
+    locations: [
+      { city: 'Santa Barbara', state: 'CA', country: 'USA', name: 'Coastal Grove Estate' }
+    ],
+    events: [
+      {
+        event_type: 'packaging',
+        actor_role: 'processor',
+        timestamp: '2024-06-14T10:00:00-07:00',
+        event_notes: 'Carefully packed to prevent bruising, ready for distribution.',
+        location_name: 'Coastal Grove Packing',
+        location_city: 'Santa Barbara',
+        location_state: 'CA',
+        certification_type: 'gap'
+      },
+      {
+        event_type: 'harvest',
+        actor_role: 'farmer',
+        timestamp: '2024-06-14T06:00:00-07:00',
+        event_notes: 'Premium avocados harvested at optimal ripeness from coastal grove.',
+        location_name: 'Coastal Grove Estate',
+        location_city: 'Santa Barbara',
+        location_state: 'CA',
+        certification_type: 'gap'
+      }
+    ]
+  },
+  oats: {
+    product_id: 'oats',
+    verified: true,
+    total_events: 3,
+    certifications: ['organic'],
+    locations: [
+      { city: 'Fargo', state: 'ND', country: 'USA', name: 'Prairie Mill Farm' }
+    ],
+    events: [
+      {
+        event_type: 'packaging',
+        actor_role: 'processor',
+        timestamp: '2024-06-05T14:00:00-06:00',
+        event_notes: 'Packaged in food-grade containers with freshness guarantee.',
+        location_name: 'Prairie Mill Facility',
+        location_city: 'Fargo',
+        location_state: 'ND',
+        certification_type: 'organic'
+      },
+      {
+        event_type: 'processing',
+        actor_role: 'processor',
+        timestamp: '2024-06-05T09:00:00-06:00',
+        event_notes: 'Milled to premium grade, stone-ground process preserves nutrients.',
+        location_name: 'Prairie Mill Facility',
+        location_city: 'Fargo',
+        location_state: 'ND',
+        certification_type: 'organic'
+      },
+      {
+        event_type: 'harvest',
+        actor_role: 'farmer',
+        timestamp: '2024-06-05T05:00:00-06:00',
+        event_notes: 'Organic oats harvested at peak maturity from prairie mill region.',
+        location_name: 'Prairie Mill Farm',
+        location_city: 'Fargo',
+        location_state: 'ND',
+        certification_type: 'organic'
+      }
+    ]
+  },
+  lentils: {
+    product_id: 'lentils',
+    verified: true,
+    total_events: 2,
+    certifications: ['organic'],
+    locations: [
+      { city: 'Billings', state: 'MT', country: 'USA', name: 'Sunrise Pulse Farms' }
+    ],
+    events: [
+      {
+        event_type: 'inspection',
+        actor_role: 'inspector',
+        timestamp: '2024-06-08T09:00:00-06:00',
+        event_notes: 'Quality control passed, protein content verified, organic certification confirmed.',
+        location_name: 'Sunrise Pulse Inspection Lab',
+        location_city: 'Billings',
+        location_state: 'MT',
+        certification_type: 'organic'
+      },
+      {
+        event_type: 'harvest',
+        actor_role: 'farmer',
+        timestamp: '2024-06-08T06:00:00-06:00',
+        event_notes: 'Red lentils harvested from certified sunrise pulse farm, organic methods.',
+        location_name: 'Sunrise Pulse Farms',
+        location_city: 'Billings',
+        location_state: 'MT',
+        certification_type: 'organic'
+      }
+    ]
+  }
+}
 
 function groupByShop(rows) {
   const map = new Map()
@@ -48,6 +303,12 @@ export function NearbyFood() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [savingLoc, setSavingLoc] = useState(false)
+  
+  // Blockchain verification state - initialize with mock data
+  const [blockchainData, setBlockchainData] = useState(MOCK_BLOCKCHAIN_DATA)
+  const [blockchainLoading, setBlockchainLoading] = useState({})
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [showBlockchainModal, setShowBlockchainModal] = useState(false)
 
   const params = useMemo(
     () => ({
@@ -100,6 +361,33 @@ export function NearbyFood() {
     } finally {
       setSavingLoc(false)
     }
+  }
+
+  const fetchBlockchainVerification = async (productId, itemName) => {
+    if (blockchainData[productId]) {
+      setSelectedProduct({ productId, itemName, data: blockchainData[productId] })
+      setShowBlockchainModal(true)
+      return
+    }
+
+    setBlockchainLoading((prev) => ({ ...prev, [productId]: true }))
+    try {
+      const data = await verifyProductBlockchain(productId)
+      setBlockchainData((prev) => ({ ...prev, [productId]: data }))
+      setSelectedProduct({ productId, itemName, data })
+      setShowBlockchainModal(true)
+    } catch (err) {
+      console.error('Failed to fetch blockchain verification:', err)
+      setError('Could not load blockchain verification data.')
+    } finally {
+      setBlockchainLoading((prev) => ({ ...prev, [productId]: false }))
+    }
+  }
+
+  const getBlockchainProductId = (name) => {
+    // Convert product name to lowercase for blockchain matching
+    // e.g., "Spinach" -> "spinach", "Wild salmon" -> "wild salmon"
+    return name.toLowerCase()
   }
 
   return (
@@ -315,7 +603,12 @@ export function NearbyFood() {
       {mode === 'list' && (
         <div className="grid gap-5 md:grid-cols-2">
           {items.length === 0 && !loading && <p className="text-sm text-mauve-600 col-span-full">No matches — widen the radius or lower the safety filter.</p>}
-          {items.map((row) => (
+          {items.map((row) => {
+            const productId = getBlockchainProductId(row.food_item.name)
+            const isVerified = !!blockchainData[productId]
+            const isLoading = blockchainLoading[productId]
+
+            return (
             <div
               key={row.id}
               className="overflow-hidden rounded-3xl border border-rose-100/90 bg-white/95 shadow-md shadow-rose-100/40 transition hover:-translate-y-0.5 hover:shadow-lg"
@@ -333,6 +626,11 @@ export function NearbyFood() {
                 <div className="absolute right-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-rose-600 shadow-md backdrop-blur-sm">
                   Safety {row.food_item.safety_score}
                 </div>
+                <BlockchainVerificationBadge
+                  isVerified={isVerified}
+                  isLoading={isLoading}
+                  onClick={() => fetchBlockchainVerification(productId, row.food_item.name)}
+                />
               </div>
               <div className="space-y-2 p-5">
                 <p className="font-display text-xl text-mauve-800">{row.food_item.name}</p>
@@ -344,7 +642,8 @@ export function NearbyFood() {
                 </p>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -388,6 +687,16 @@ export function NearbyFood() {
           </p>
         </div>
       )}
+
+      <BlockchainVerificationModal
+        isOpen={showBlockchainModal}
+        onClose={() => {
+          setShowBlockchainModal(false)
+          setSelectedProduct(null)
+        }}
+        data={selectedProduct?.data}
+        productName={selectedProduct?.itemName}
+      />
     </div>
   )
 }
